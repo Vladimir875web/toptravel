@@ -43,9 +43,9 @@ export default function LeadForm({ tour, source, onBack, onSuccess }) {
         travelDates: form.travelDates.trim(),
         budget: form.budget.trim(),
         wishes: form.wishes.trim(),
-        clientName: tgUser?.name,
-        telegramUserId: tgUser?.id,
-        telegramUsername: tgUser?.username,
+        customerName: tgUser?.firstName || tgUser?.name || null,
+        telegramUserId: tgUser?.id || null,
+        telegramUsername: tgUser?.username || null,
       })
       haptic('medium')
       onSuccess()

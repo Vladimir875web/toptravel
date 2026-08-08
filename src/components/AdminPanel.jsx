@@ -150,8 +150,14 @@ export default function AdminPanel() {
               </div>
 
               <div style={styles.row}>
-                <b>{lead.customer_name || 'Без имени'}</b> —{' '}
-                <a href={`tel:${lead.phone}`}>{lead.phone}</a>
+                <b>
+                  {lead.customer_name ||
+                    lead.client_name ||
+                    (lead.telegram_username
+                      ? `@${lead.telegram_username}`
+                      : 'Без имени')}
+                </b>{' '}
+                — <a href={`tel:${lead.phone}`}>{lead.phone}</a>
               </div>
 
               {lead.tour_id && tours[lead.tour_id] && (
