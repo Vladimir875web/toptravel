@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import AdminPanel from './components/AdminPanel'
 import Catalog from './components/Catalog'
 import LeadForm from './components/LeadForm'
 import Success from './components/Success'
@@ -7,6 +8,8 @@ import { fetchCatalog } from './lib/api'
 import { haptic, initTelegram } from './lib/telegram'
 
 export default function App() {
+  const isAdmin = window.location.pathname === '/admin'
+
   const [view, setView] = useState('catalog') // catalog | detail | form | success
   const [categories, setCategories] = useState([])
   const [tours, setTours] = useState([])
@@ -17,10 +20,12 @@ export default function App() {
   const [loadError, setLoadError] = useState('')
 
   useEffect(() => {
+    if (isAdmin) return
     initTelegram()
-  }, [])
+  }, [isAdmin])
 
   useEffect(() => {
+    if (isAdmin) return
     let cancelled = false
     ;(async () => {
       try {
@@ -39,7 +44,11 @@ export default function App() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [isAdmin])
+
+  if (isAdmin) {
+    return <AdminPanel />
+  }
 
   function openTour(tour) {
     haptic('light')
