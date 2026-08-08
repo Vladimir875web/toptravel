@@ -51,7 +51,7 @@ create table if not exists leads (
   travel_dates text,
   budget text,
   wishes text,
-  customer_name text,
+  client_name text,
   telegram_user_id bigint,
   telegram_username text,
   status text not null default 'new'

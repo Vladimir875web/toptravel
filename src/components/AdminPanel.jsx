@@ -151,8 +151,7 @@ export default function AdminPanel() {
 
               <div style={styles.row}>
                 <b>
-                  {lead.customer_name ||
-                    lead.client_name ||
+                  {lead.client_name ||
                     (lead.telegram_username
                       ? `@${lead.telegram_username}`
                       : 'Без имени')}
@@ -173,8 +172,8 @@ export default function AdminPanel() {
               {lead.travelers_count && (
                 <div style={styles.row}>Человек: {lead.travelers_count}</div>
               )}
-              {lead.comment && (
-                <div style={styles.comment}>«{lead.comment}»</div>
+              {lead.wishes && (
+                <div style={styles.comment}>«{lead.wishes}»</div>
               )}
 
               <div style={styles.statusButtons}>

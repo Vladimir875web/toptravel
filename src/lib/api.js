@@ -47,7 +47,7 @@ export async function createLead(payload) {
       travel_dates: payload.travelDates || null,
       budget: payload.budget || null,
       wishes: payload.wishes || null,
-      customer_name: payload.customerName || null,
+      client_name: payload.clientName || null,
       telegram_user_id: payload.telegramUserId || null,
       telegram_username: payload.telegramUsername || null,
     })
