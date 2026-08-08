@@ -25,6 +25,7 @@ export function getTelegramUser() {
   return {
     id: user.id,
     username: user.username || null,
+    firstName: user.first_name || null,
     name: [user.first_name, user.last_name].filter(Boolean).join(' ') || null,
   }
 }
