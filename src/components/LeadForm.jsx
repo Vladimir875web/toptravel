@@ -43,7 +43,7 @@ export default function LeadForm({ tour, source, onBack, onSuccess }) {
         travelDates: form.travelDates.trim(),
         budget: form.budget.trim(),
         wishes: form.wishes.trim(),
-        customerName: tgUser?.firstName || tgUser?.name || null,
+        clientName: tgUser?.firstName || tgUser?.name || null,
         telegramUserId: tgUser?.id || null,
         telegramUsername: tgUser?.username || null,
       })

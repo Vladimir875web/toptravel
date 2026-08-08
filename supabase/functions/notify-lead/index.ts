@@ -74,9 +74,7 @@ Deno.serve(async (req) => {
       `Источник: ${sourceLabel}`,
       tourTitle ? `Тур: ${tourTitle}` : null,
       `Телефон: ${record.phone}`,
-      record.customer_name || record.client_name
-        ? `Имя: ${record.customer_name || record.client_name}`
-        : null,
+      record.client_name ? `Имя: ${record.client_name}` : null,
       record.telegram_username ? `Username: @${record.telegram_username}` : null,
       record.travel_dates ? `Даты: ${record.travel_dates}` : null,
       record.budget ? `Бюджет: ${record.budget}` : null,
