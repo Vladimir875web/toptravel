@@ -31,7 +31,7 @@ export default function ToursManager() {
       .from('tours')
       .select('*')
       .eq('agency_id', AGENCY_ID)
-      .order('sort_order');
+      .order('created_at', { ascending: false });
 
     console.log('AGENCY_ID:', AGENCY_ID, 'Найдено туров:', toursData?.length, toursData);
 
