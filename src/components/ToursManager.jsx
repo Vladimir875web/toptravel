@@ -20,6 +20,8 @@ export default function ToursManager() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null); // null = закрыто, emptyTour = новый, объект = редактирование
   const [saving, setSaving] = useState(false);
+  const [importUrl, setImportUrl] = useState('');
+  const [importing, setImporting] = useState(false);
 
   async function loadAll() {
     setLoading(true);
@@ -82,6 +84,50 @@ export default function ToursManager() {
 
     setEditing(null);
     loadAll();
+  }
+
+  async function handleImportFromUrl() {
+    if (!importUrl.trim()) return;
+    setImporting(true);
+
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-tour-preview`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({ url: importUrl }),
+        }
+      );
+      const data = await res.json();
+
+      if (data.error) {
+        alert('Не удалось получить данные: ' + data.error);
+        setImporting(false);
+        return;
+      }
+
+      setEditing({
+        ...emptyTour,
+        title: data.title || '',
+        description: data.description || '',
+        photo_url: data.image || '',
+        // цену и дни всё равно проверь глазами — автоопределение приблизительное
+      });
+
+      if (data.priceGuess) {
+        alert(
+          `Нашёл возможную цену на странице: ${data.priceGuess}\nПроверь и впиши вручную в поле "Цена от", если верно.`
+        );
+      }
+    } catch (err) {
+      alert('Ошибка при обращении к странице: ' + err.message);
+    }
+
+    setImporting(false);
   }
 
   async function handleDelete(tourId) {
@@ -206,6 +252,22 @@ export default function ToursManager() {
         <h1 style={{ margin: 0, fontSize: 20 }}>Туры</h1>
         <button onClick={() => setEditing(emptyTour)} style={styles.addBtn}>
           + Добавить тур
+        </button>
+      </div>
+
+      <div style={styles.importBox}>
+        <input
+          style={styles.input}
+          placeholder="Вставь ссылку на тур с traveldeluxe.cz..."
+          value={importUrl}
+          onChange={(e) => setImportUrl(e.target.value)}
+        />
+        <button
+          onClick={handleImportFromUrl}
+          disabled={importing}
+          style={styles.importBtn}
+        >
+          {importing ? 'Загрузка...' : 'Подтянуть данные'}
         </button>
       </div>
 
@@ -356,5 +418,20 @@ const styles = {
     fontWeight: 600,
     fontSize: 15,
     cursor: 'pointer',
+  },
+  importBox: {
+    display: 'flex',
+    gap: 8,
+    marginBottom: 16,
+  },
+  importBtn: {
+    background: '#334155',
+    color: '#fff',
+    border: '1px solid #475569',
+    borderRadius: 8,
+    padding: '10px 16px',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+    fontSize: 14,
   },
 };

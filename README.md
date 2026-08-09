@@ -1,114 +1,160 @@
-# Telegram Travel Agency Mini App — MVP
+// Supabase Edge Function: fetch-tour-preview
 
-Клиент листает каталог туров или жмёт **«Подобрать тур индивидуально»**, заполняет короткую форму — заявка падает в `leads`, менеджер получает уведомление в Telegram.
+// Принимает { url: "..." }, заходит на страницу, вытаскивает title/image/description
 
-**Стек:** React + Vite · Supabase (БД + Edge Functions) · Telegram Bot API · Vercel
+// из Open Graph метатегов + пытается найти цену в тексте страницы.
 
----
+// Возвращает { title, image, description, priceGuess } — админка использует это
 
-## 1. Supabase
+// чтобы предзаполнить форму добавления тура.
 
-1. Создайте проект на [supabase.com](https://supabase.com).
-2. SQL Editor → выполните `supabase/schema.sql`.
-3. Добавьте агентство (подставьте chat id менеджера):
+import { serve } from '[https://deno.land/std@0.177.0/http/server.ts](https://deno.land/std@0.177.0/http/server.ts)';
 
-```sql
-insert into agencies (name, telegram_manager_chat_id)
-values ('Тестовое агентство', 'CHAT_ID_МЕНЕДЖЕРА')
-returning id;
-```
+const corsHeaders = {
 
-Как узнать `CHAT_ID`: напишите боту `/start`, затем откройте  
-`https://api.telegram.org/bot<TOKEN>/getUpdates` и найдите `chat.id`.
+  'Access-Control-Allow-Origin': '*',
 
-4. Выполните `supabase/seed.sql` **или** раскомментируйте insert’ы и подставьте UUID агентства.
-5. Скопируйте Project URL и anon key из Settings → API.
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 
----
+};
 
-## 2. Frontend
+function extractMeta(html: string, property: string): string | null {
 
-```bash
-npm install
-cp .env.example .env
-```
+  // ищем <meta property="og:title" content="...">  (порядок атрибутов может быть любым)
 
-Заполните `.env`:
+  const re1 = new RegExp(
 
-```env
-VITE_SUPABASE_URL=https://xxxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJxxx...
-VITE_AGENCY_ID=uuid-агентства
-```
+    `<meta[^>]+property=["']${property}["'][^>]+content=["']([^"']*)["']`,
 
-```bash
-npm run dev
-```
+    'i'
 
-Без `.env` приложение стартует в **демо-режиме** (локальный каталог, заявки только в console).
+  );
 
-Telegram Web App SDK уже подключён в `index.html`.
+  const re2 = new RegExp(
 
----
+    `<meta[^>]+content=["']([^"']*)["'][^>]+property=["']${property}["']`,
 
-## 3. Telegram Bot + Mini App
+    'i'
 
-1. @BotFather → `/newbot` — сохраните токен.
-2. `/newapp` → укажите URL задеплоенного фронта (Vercel).
-3. `/setmenubutton` → кнопка меню бота открывает Mini App.
+  );
 
----
+  const m1 = html.match(re1);
 
-## 4. Edge Function (уведомления)
+  if (m1) return m1[1];
 
-```bash
-supabase login
-supabase link --project-ref YOUR_PROJECT_REF
-supabase functions deploy notify-lead
-supabase secrets set TELEGRAM_BOT_TOKEN=xxx
-```
+  const m2 = html.match(re2);
 
-**Database Webhook** в Dashboard:
+  if (m2) return m2[1];
 
-- Database → Webhooks → Create  
-- Table: `leads`  
-- Event: `INSERT`  
-- URL: `https://xxxxx.supabase.co/functions/v1/notify-lead`  
-- Добавьте заголовок авторизации при необходимости (service role / function JWT — по настройкам проекта)
+  return null;
 
-После INSERT в `leads` менеджер получает сообщение с телефоном, датами, бюджетом и пожеланиями.
+}
 
----
+function extractTitle(html: string): string | null {
 
-## 5. Деплой
+  const m = html.match(/<title[^>]*>([^<]*)<\/title>/i);
 
-```bash
-npm i -g vercel
-vercel
-```
+  return m ? m[1].trim() : null;
 
-В Vercel задайте те же `VITE_*` переменные, что и в `.env`, затем Redeploy.
+}
 
----
+function guessPrice(html: string): string | null {
 
-## Структура
+  // ищем паттерны вида "12 345 Kč" или "12345 Kč" в тексте страницы
 
-```
-src/
-  App.jsx                 # навигация: каталог → тур → форма → успех
-  components/             # Catalog, TourCard, TourDetail, LeadForm, Success
-  lib/                    # supabase, telegram, api, demoData
-supabase/
-  schema.sql
-  seed.sql
-  functions/notify-lead/  # Telegram-уведомление менеджеру
-```
+  const matches = html.match(/(\d[\d\s]{2,8})\s*Kč/g);
 
----
+  if (!matches || matches.length === 0) return null;
 
-## Что можно доращивать
+  // берём самое частое/первое разумное значение
 
-- Админка менеджера: CRUD туров + канбан заявок по статусам  
-- Фильтры каталога (цена, направление, даты)  
-- CRM (Bitrix24, amoCRM)  
-- Мультиязычность (UA / CS)
+  return matches[0].replace(/\s/g, ' ').trim();
+
+}
+
+serve(async (req) => {
+
+  if (req.method === 'OPTIONS') {
+
+    return new Response('ok', { headers: corsHeaders });
+
+  }
+
+  try {
+
+    const { url } = await req.json();
+
+    if (!url || !url.startsWith('http')) {
+
+      return new Response(JSON.stringify({ error: 'Некорректная ссылка' }), {
+
+        status: 400,
+
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+
+      });
+
+    }
+
+    const res = await fetch(url, {
+
+      headers: {
+
+        // некоторые сайты отдают другой HTML ботам без User-Agent
+
+        'User-Agent':
+
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36',
+
+      },
+
+    });
+
+    if (!res.ok) {
+
+      return new Response(
+
+        JSON.stringify({ error: `Не удалось открыть страницу (${res.status})` }),
+
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+
+      );
+
+    }
+
+    const html = await res.text();
+
+    const title =
+
+      extractMeta(html, 'og:title') || extractTitle(html) || null;
+
+    const image = extractMeta(html, 'og:image') || null;
+
+    const description = extractMeta(html, 'og:description') || null;
+
+    const priceGuess = guessPrice(html);
+
+    return new Response(
+
+      JSON.stringify({ title, image, description, priceGuess }),
+
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+
+    );
+
+  } catch (err) {
+
+    return new Response(JSON.stringify({ error: String(err) }), {
+
+      status: 500,
+
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+
+    });
+
+  }
+
+});
+
+
+
