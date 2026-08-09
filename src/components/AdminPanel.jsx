@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import ToursManager from './ToursManager';
 
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
 
@@ -30,6 +31,7 @@ export default function AdminPanel() {
   const [tours, setTours] = useState({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [tab, setTab] = useState('leads'); // leads | tours
 
   function handleLogin() {
     if (passwordInput === ADMIN_PASSWORD) {
@@ -102,97 +104,124 @@ export default function AdminPanel() {
 
   return (
     <div style={styles.page}>
-      <div style={styles.header}>
-        <h1 style={{ margin: 0, fontSize: 20 }}>Заявки</h1>
-        <button onClick={loadLeads} style={styles.refreshBtn}>
-          ↻ Обновить
-        </button>
-      </div>
-
-      <div style={styles.filters}>
+      <div style={styles.tabs}>
         <button
-          onClick={() => setFilter('all')}
-          style={filter === 'all' ? styles.filterBtnActive : styles.filterBtn}
+          type="button"
+          onClick={() => setTab('leads')}
+          style={tab === 'leads' ? styles.tabActive : styles.tab}
         >
-          Все ({leads.length})
+          Заявки
         </button>
-        {STATUS_ORDER.map((s) => (
-          <button
-            key={s}
-            onClick={() => setFilter(s)}
-            style={filter === s ? styles.filterBtnActive : styles.filterBtn}
-          >
-            {STATUS_LABELS[s]} ({leads.filter((l) => l.status === s).length})
-          </button>
-        ))}
+        <button
+          type="button"
+          onClick={() => setTab('tours')}
+          style={tab === 'tours' ? styles.tabActive : styles.tab}
+        >
+          Туры
+        </button>
       </div>
 
-      {loading ? (
-        <div style={{ padding: 20 }}>Загрузка...</div>
-      ) : visibleLeads.length === 0 ? (
-        <div style={{ padding: 20, color: '#888' }}>Заявок нет</div>
+      {tab === 'tours' ? (
+        <ToursManager />
       ) : (
-        <div style={styles.list}>
-          {visibleLeads.map((lead) => (
-            <div key={lead.id} style={styles.card}>
-              <div style={styles.cardHeader}>
-                <span
-                  style={{
-                    ...styles.badge,
-                    background: STATUS_COLORS[lead.status] ?? '#888',
-                  }}
-                >
-                  {STATUS_LABELS[lead.status] ?? lead.status}
-                </span>
-                <span style={styles.date}>
-                  {new Date(lead.created_at).toLocaleString('ru-RU')}
-                </span>
-              </div>
+        <>
+          <div style={styles.header}>
+            <h1 style={{ margin: 0, fontSize: 20 }}>Заявки</h1>
+            <button onClick={loadLeads} style={styles.refreshBtn}>
+              ↻ Обновить
+            </button>
+          </div>
 
-              <div style={styles.row}>
-                <b>
-                  {lead.client_name ||
-                    (lead.telegram_username
-                      ? `@${lead.telegram_username}`
-                      : 'Без имени')}
-                </b>{' '}
-                — <a href={`tel:${lead.phone}`}>{lead.phone}</a>
-              </div>
+          <div style={styles.filters}>
+            <button
+              onClick={() => setFilter('all')}
+              style={filter === 'all' ? styles.filterBtnActive : styles.filterBtn}
+            >
+              Все ({leads.length})
+            </button>
+            {STATUS_ORDER.map((s) => (
+              <button
+                key={s}
+                onClick={() => setFilter(s)}
+                style={filter === s ? styles.filterBtnActive : styles.filterBtn}
+              >
+                {STATUS_LABELS[s]} ({leads.filter((l) => l.status === s).length})
+              </button>
+            ))}
+          </div>
 
-              {lead.tour_id && tours[lead.tour_id] && (
-                <div style={styles.row}>Тур: {tours[lead.tour_id]}</div>
-              )}
-              {!lead.tour_id && (
-                <div style={styles.row}>Тип: индивидуальный подбор</div>
-              )}
-              {lead.travel_dates && (
-                <div style={styles.row}>Даты: {lead.travel_dates}</div>
-              )}
-              {lead.budget && <div style={styles.row}>Бюджет: {lead.budget}</div>}
-              {lead.travelers_count && (
-                <div style={styles.row}>Человек: {lead.travelers_count}</div>
-              )}
-              {lead.wishes && (
-                <div style={styles.comment}>«{lead.wishes}»</div>
-              )}
+          {loading ? (
+            <div style={{ padding: 20 }}>Загрузка...</div>
+          ) : visibleLeads.length === 0 ? (
+            <div style={{ padding: 20, color: '#888' }}>Заявок нет</div>
+          ) : (
+            <div style={styles.list}>
+              {visibleLeads.map((lead) => (
+                <div key={lead.id} style={styles.card}>
+                  <div style={styles.cardHeader}>
+                    <span
+                      style={{
+                        ...styles.badge,
+                        background: STATUS_COLORS[lead.status] ?? '#888',
+                      }}
+                    >
+                      {STATUS_LABELS[lead.status] ?? lead.status}
+                    </span>
+                    <span style={styles.date}>
+                      {new Date(lead.created_at).toLocaleString('ru-RU')}
+                    </span>
+                  </div>
 
-              <div style={styles.statusButtons}>
-                {STATUS_ORDER.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => updateStatus(lead.id, s)}
-                    style={{
-                      ...styles.statusBtn,
-                      ...(lead.status === s ? styles.statusBtnActive : {}),
-                    }}
-                  >
-                    {STATUS_LABELS[s]}
-                  </button>
-                ))}
-              </div>
+                  <div style={styles.row}>
+                    <b>
+                      {lead.client_name ||
+                        (lead.telegram_username
+                          ? `@${lead.telegram_username}`
+                          : 'Без имени')}
+                    </b>{' '}
+                    — <a href={`tel:${lead.phone}`}>{lead.phone}</a>
+                  </div>
+
+                  {lead.tour_id && tours[lead.tour_id] && (
+                    <div style={styles.row}>Тур: {tours[lead.tour_id]}</div>
+                  )}
+                  {!lead.tour_id && (
+                    <div style={styles.row}>Тип: индивидуальный подбор</div>
+                  )}
+                  {lead.travel_dates && (
+                    <div style={styles.row}>Даты: {lead.travel_dates}</div>
+                  )}
+                  {lead.budget && (
+                    <div style={styles.row}>Бюджет: {lead.budget}</div>
+                  )}
+                  {lead.travelers_count && (
+                    <div style={styles.row}>
+                      Человек: {lead.travelers_count}
+                    </div>
+                  )}
+                  {lead.wishes && (
+                    <div style={styles.comment}>«{lead.wishes}»</div>
+                  )}
+
+                  <div style={styles.statusButtons}>
+                    {STATUS_ORDER.map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => updateStatus(lead.id, s)}
+                        style={{
+                          ...styles.statusBtn,
+                          ...(lead.status === s ? styles.statusBtnActive : {}),
+                        }}
+                      >
+                        {STATUS_LABELS[s]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -205,6 +234,37 @@ const styles = {
     color: '#e2e8f0',
     fontFamily: 'system-ui, sans-serif',
     padding: 16,
+  },
+  tabs: {
+    display: 'flex',
+    gap: 8,
+    marginBottom: 16,
+    padding: 4,
+    background: '#1e293b',
+    border: '1px solid #334155',
+    borderRadius: 12,
+  },
+  tab: {
+    flex: 1,
+    background: 'transparent',
+    color: '#94a3b8',
+    border: 'none',
+    borderRadius: 8,
+    padding: '10px 12px',
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  tabActive: {
+    flex: 1,
+    background: '#14b8a6',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 8,
+    padding: '10px 12px',
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: 'pointer',
   },
   header: {
     display: 'flex',
