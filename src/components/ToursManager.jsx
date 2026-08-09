@@ -33,6 +33,8 @@ export default function ToursManager() {
       .eq('agency_id', AGENCY_ID)
       .order('sort_order');
 
+    console.log('AGENCY_ID:', AGENCY_ID, 'Найдено туров:', toursData?.length, toursData);
+
     const { data: catsData } = await supabase
       .from('tour_categories')
       .select('*')
