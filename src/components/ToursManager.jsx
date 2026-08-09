@@ -9,7 +9,7 @@ const emptyTour = {
   description: '',
   price_from: '',
   duration_days: '',
-  photo_url: '',
+  image_url: '',
   category_id: '',
   is_active: true,
 };
@@ -63,7 +63,7 @@ export default function ToursManager() {
       description: editing.description || null,
       price_from: editing.price_from ? parseFloat(editing.price_from) : null,
       duration_days: editing.duration_days ? parseInt(editing.duration_days, 10) : null,
-      photo_url: editing.photo_url || null,
+      image_url: editing.image_url || null,
       category_id: editing.category_id || null,
       is_active: editing.is_active,
     };
@@ -114,7 +114,7 @@ export default function ToursManager() {
         ...emptyTour,
         title: data.title || '',
         description: data.description || '',
-        photo_url: data.image || '',
+        image_url: data.image || '',
         // цену и дни всё равно проверь глазами — автоопределение приблизительное
       });
 
@@ -221,12 +221,12 @@ export default function ToursManager() {
           <label style={styles.label}>Ссылка на фото</label>
           <input
             style={styles.input}
-            value={editing.photo_url || ''}
-            onChange={(e) => setEditing({ ...editing, photo_url: e.target.value })}
+            value={editing.image_url || ''}
+            onChange={(e) => setEditing({ ...editing, image_url: e.target.value })}
             placeholder="https://..."
           />
-          {editing.photo_url && (
-            <img src={editing.photo_url} alt="preview" style={styles.photoPreview} />
+          {editing.image_url && (
+            <img src={editing.image_url} alt="preview" style={styles.photoPreview} />
           )}
 
           <label style={styles.checkboxRow}>
@@ -279,8 +279,8 @@ export default function ToursManager() {
         <div style={styles.list}>
           {tours.map((tour) => (
             <div key={tour.id} style={styles.card}>
-              {tour.photo_url && (
-                <img src={tour.photo_url} alt={tour.title} style={styles.thumb} />
+              {tour.image_url && (
+                <img src={tour.image_url} alt={tour.title} style={styles.thumb} />
               )}
               <div style={{ flex: 1 }}>
                 <div style={styles.cardTitleRow}>
