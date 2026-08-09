@@ -6,8 +6,10 @@ const AGENCY_ID = import.meta.env.VITE_AGENCY_ID;
 const emptyTour = {
   id: null,
   title: '',
+  destination: '',
   description: '',
   price_from: '',
+  currency: 'Kč',
   duration_days: '',
   image_url: '',
   category_id: '',
@@ -55,13 +57,19 @@ export default function ToursManager() {
       alert('Укажите название тура');
       return;
     }
+    if (!editing.destination?.trim()) {
+      alert('Укажите направление');
+      return;
+    }
     setSaving(true);
 
     const payload = {
       agency_id: AGENCY_ID,
       title: editing.title,
+      destination: editing.destination.trim(),
       description: editing.description || null,
       price_from: editing.price_from ? parseFloat(editing.price_from) : null,
+      currency: editing.currency || 'Kč',
       duration_days: editing.duration_days ? parseInt(editing.duration_days, 10) : null,
       image_url: editing.image_url || null,
       category_id: editing.category_id || null,
@@ -110,19 +118,20 @@ export default function ToursManager() {
         return;
       }
 
+      let priceFrom = '';
+      if (data.priceGuess) {
+        const digits = String(data.priceGuess).replace(/[^\d]/g, '');
+        if (digits) priceFrom = digits;
+      }
+
       setEditing({
         ...emptyTour,
         title: data.title || '',
         description: data.description || '',
         image_url: data.image || '',
-        // цену и дни всё равно проверь глазами — автоопределение приблизительное
+        price_from: priceFrom,
+        currency: 'Kč',
       });
-
-      if (data.priceGuess) {
-        alert(
-          `Нашёл возможную цену на странице: ${data.priceGuess}\nПроверь и впиши вручную в поле "Цена от", если верно.`
-        );
-      }
     } catch (err) {
       alert('Ошибка при обращении к странице: ' + err.message);
     }
@@ -173,6 +182,17 @@ export default function ToursManager() {
             placeholder="Турция, Анталья — 7 ночей"
           />
 
+          <label style={styles.label}>Направление *</label>
+          <input
+            style={styles.input}
+            value={editing.destination || ''}
+            onChange={(e) =>
+              setEditing({ ...editing, destination: e.target.value })
+            }
+            placeholder="Турция, Анталья"
+            required
+          />
+
           <label style={styles.label}>Категория</label>
           <select
             style={styles.input}
@@ -197,13 +217,13 @@ export default function ToursManager() {
 
           <div style={styles.row2}>
             <div style={{ flex: 1 }}>
-              <label style={styles.label}>Цена от (€)</label>
+              <label style={styles.label}>Цена от (Kč)</label>
               <input
                 style={styles.input}
                 type="number"
                 value={editing.price_from || ''}
                 onChange={(e) => setEditing({ ...editing, price_from: e.target.value })}
-                placeholder="699"
+                placeholder="149000"
               />
             </div>
             <div style={{ flex: 1 }}>
@@ -288,9 +308,14 @@ export default function ToursManager() {
                   {!tour.is_active && <span style={styles.hiddenBadge}>скрыт</span>}
                 </div>
                 <div style={styles.cardMeta}>
-                  {categoryName(tour.category_id)}
+                  {tour.destination || '—'}
+                  {categoryName(tour.category_id)
+                    ? ` · ${categoryName(tour.category_id)}`
+                    : ''}
                   {tour.duration_days ? ` · ${tour.duration_days} дн.` : ''}
-                  {tour.price_from ? ` · от ${tour.price_from} €` : ''}
+                  {tour.price_from
+                    ? ` · от ${tour.price_from} ${tour.currency || 'Kč'}`
+                    : ''}
                 </div>
               </div>
               <div style={styles.cardActions}>
